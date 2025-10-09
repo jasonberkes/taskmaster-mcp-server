@@ -31,7 +31,7 @@ const db = new Database({
   password: process.env.DB_PASSWORD!,
 });
 
-const userId = parseInt(process.env.USER_ID!, 10);
+const userId = process.env.USER_ID!;
 
 // Define tools
 const tools: Tool[] = [
@@ -139,11 +139,10 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           [
             { name: 'Source', type: TYPES.NVarChar, value: 'ClaudeDesktop' },
             { name: 'ExternalId', type: TYPES.NVarChar, value: externalId },
-            { name: 'UserId', type: TYPES.Int, value: userId },
+            { name: 'UserId', type: TYPES.NVarChar, value: userId },
             { name: 'Title', type: TYPES.NVarChar, value: title },
             { name: 'MessagesJson', type: TYPES.NVarChar, value: messagesJson },
           ],
-          [{ name: 'ConversationId', type: TYPES.Int }]
         );
 
         const conversationId = result.output.ConversationId || result.results[0]?.Id;
@@ -187,7 +186,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           ORDER BY c.UpdatedAt DESC`,
           [
             { name: 'Limit', type: TYPES.Int, value: limit },
-            { name: 'UserId', type: TYPES.Int, value: userId },
+            { name: 'UserId', type: TYPES.NVarChar, value: userId },
             { name: 'Query', type: TYPES.NVarChar, value: searchQuery },
           ]
         );
@@ -216,7 +215,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           WHERE Id = @ConversationId AND UserId = @UserId AND IsActive = 1`,
           [
             { name: 'ConversationId', type: TYPES.Int, value: conversationId },
-            { name: 'UserId', type: TYPES.Int, value: userId },
+            { name: 'UserId', type: TYPES.NVarChar, value: userId },
           ]
         );
 
