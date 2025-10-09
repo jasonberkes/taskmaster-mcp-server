@@ -1,4 +1,6 @@
-import { Connection, Request, TYPES, TediousType } from 'tedious';
+import { Connection, Request, TYPES } from 'tedious';
+
+type TediousType = typeof TYPES[keyof typeof TYPES];
 
 export interface DbConfig {
   server: string;
@@ -68,9 +70,9 @@ export class Database {
       }
 
       // Handle rows
-      request.on('row', (columns) => {
+      request.on('row', (columns: any) => {
         const row: any = {};
-        columns.forEach((column) => {
+        columns.forEach((column: any) => {
           row[column.metadata.colName] = column.value;
         });
         results.push(row);
@@ -116,9 +118,9 @@ export class Database {
       }
 
       // Handle rows
-      request.on('row', (columns) => {
+      request.on('row', (columns: any) => {
         const row: any = {};
-        columns.forEach((column) => {
+        columns.forEach((column: any) => {
           row[column.metadata.colName] = column.value;
         });
         results.push(row);
