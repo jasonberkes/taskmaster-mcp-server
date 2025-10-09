@@ -10,6 +10,7 @@ import {
 import { TYPES } from 'tedious';
 import dotenv from 'dotenv';
 import { Database } from './db.js';
+import * as FileSystem from './filesystem.js';
 
 // Load environment variables
 dotenv.config();
@@ -93,6 +94,116 @@ const tools: Tool[] = [
         },
       },
       required: ['conversationId'],
+    },
+  },
+  {
+    name: 'read_file',
+    description: 'Read the contents of a file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'Path to the file to read',
+        },
+      },
+      required: ['filePath'],
+    },
+  },
+  {
+    name: 'write_file',
+    description: 'Write content to a file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'Path to the file to write',
+        },
+        content: {
+          type: 'string',
+          description: 'Content to write to the file',
+        },
+      },
+      required: ['filePath', 'content'],
+    },
+  },
+  {
+    name: 'list_directory',
+    description: 'List contents of a directory',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dirPath: {
+          type: 'string',
+          description: 'Path to the directory to list',
+        },
+      },
+      required: ['dirPath'],
+    },
+  },
+  {
+    name: 'search_files',
+    description: 'Search for files matching a pattern',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        searchPath: {
+          type: 'string',
+          description: 'Path to search in',
+        },
+        pattern: {
+          type: 'string',
+          description: 'Search pattern to match',
+        },
+      },
+      required: ['searchPath', 'pattern'],
+    },
+  },
+  {
+    name: 'create_directory',
+    description: 'Create a new directory',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        dirPath: {
+          type: 'string',
+          description: 'Path to the directory to create',
+        },
+      },
+      required: ['dirPath'],
+    },
+  },
+  {
+    name: 'get_file_info',
+    description: 'Get information about a file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'Path to the file',
+        },
+      },
+      required: ['filePath'],
+    },
+  },
+  {
+    name: 'delete_file',
+    description: 'Delete a file',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        filePath: {
+          type: 'string',
+          description: 'Path to the file to delete',
+        },
+        confirm: {
+          type: 'boolean',
+          description: 'Confirmation to delete the file',
+        },
+      },
+      required: ['filePath', 'confirm'],
     },
   },
 ];
@@ -244,6 +355,123 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
             {
               type: 'text',
               text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'read_file': {
+        const { filePath } = args as { filePath: string };
+        console.error(`Reading file: ${filePath}`);
+
+        const content = await FileSystem.readFile(filePath);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: content,
+            },
+          ],
+        };
+      }
+
+      case 'write_file': {
+        const { filePath, content } = args as { filePath: string; content: string };
+        console.error(`Writing file: ${filePath}`);
+
+        await FileSystem.writeFile(filePath, content);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `File written successfully: ${filePath}`,
+            },
+          ],
+        };
+      }
+
+      case 'list_directory': {
+        const { dirPath } = args as { dirPath: string };
+        console.error(`Listing directory: ${dirPath}`);
+
+        const entries = await FileSystem.listDirectory(dirPath);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(entries, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'search_files': {
+        const { searchPath, pattern } = args as { searchPath: string; pattern: string };
+        console.error(`Searching files in ${searchPath} for pattern: ${pattern}`);
+
+        const results = await FileSystem.searchFiles(searchPath, pattern);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(results, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'create_directory': {
+        const { dirPath } = args as { dirPath: string };
+        console.error(`Creating directory: ${dirPath}`);
+
+        await FileSystem.createDirectory(dirPath);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `Directory created successfully: ${dirPath}`,
+            },
+          ],
+        };
+      }
+
+      case 'get_file_info': {
+        const { filePath } = args as { filePath: string };
+        console.error(`Getting file info: ${filePath}`);
+
+        const info = await FileSystem.getFileInfo(filePath);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(info, null, 2),
+            },
+          ],
+        };
+      }
+
+      case 'delete_file': {
+        const { filePath, confirm } = args as { filePath: string; confirm: boolean };
+
+        if (!confirm) {
+          throw new Error('File deletion requires confirmation (confirm parameter must be true)');
+        }
+
+        console.error(`Deleting file: ${filePath}`);
+
+        await FileSystem.deleteFile(filePath);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: `File deleted successfully: ${filePath}`,
             },
           ],
         };
