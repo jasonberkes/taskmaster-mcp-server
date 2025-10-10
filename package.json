@@ -9,13 +9,18 @@
     "start": "node build/index.js",
     "dev": "tsc && node build/index.js"
   },
-  "keywords": ["mcp", "taskmaster", "conversation"],
+  "keywords": [
+    "mcp",
+    "taskmaster",
+    "conversation"
+  ],
   "author": "",
   "license": "MIT",
   "dependencies": {
     "@modelcontextprotocol/sdk": "^0.5.0",
-    "tedious": "^18.0.0",
-    "dotenv": "^16.0.0"
+    "@octokit/rest": "^22.0.0",
+    "dotenv": "^16.0.0",
+    "tedious": "^18.0.0"
   },
   "devDependencies": {
     "@types/node": "^20.0.0",

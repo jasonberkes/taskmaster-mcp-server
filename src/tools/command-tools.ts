@@ -1,0 +1,26 @@
+import { Tool } from '@modelcontextprotocol/sdk/types.js';
+
+export const commandTools: Tool[] = [
+  {
+    name: 'run_command',
+    description: 'Execute a terminal command',
+    inputSchema: {
+      type: 'object',
+      properties: {
+        command: {
+          type: 'string',
+          description: 'Command to execute',
+        },
+        workdir: {
+          type: 'string',
+          description: 'Working directory (optional)',
+        },
+        stdin: {
+          type: 'string',
+          description: 'Standard input to pipe to command (optional)',
+        },
+      },
+      required: ['command'],
+    },
+  },
+];

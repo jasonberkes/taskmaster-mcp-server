@@ -1,0 +1,21 @@
+
+      case 'run_command': {
+        const { command, workdir, stdin } = args as {
+          command: string;
+          workdir?: string;
+          stdin?: string;
+        };
+
+        console.error(`Running command: ${command}${workdir ? ` in ${workdir}` : ''}`);
+
+        const result = await Commands.runCommand(command, workdir, stdin);
+
+        return {
+          content: [
+            {
+              type: 'text',
+              text: JSON.stringify(result, null, 2),
+            },
+          ],
+        };
+      }
