@@ -88,11 +88,13 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       // Conversation tools
       case 'save_conversation': {
-        const { title, messages } = args as {
+        const { conversationUri, title, messages } = args as {
+          conversationUri?: string;
           title: string;
           messages: Array<{ role: string; content: string; timestamp?: string }>;
         };
-        const externalId = `claude-desktop-${Date.now()}`;
+        // Use conversation URI if provided, otherwise generate unique ID
+        const externalId = conversationUri || `claude-desktop-${Date.now()}`;
         const messagesJson = JSON.stringify(messages);
         console.error(`Saving conversation: ${title}`);
         const result = await db.executeProcedure('sp_SaveConversation', [
