@@ -7,6 +7,10 @@ export const conversationTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        conversationUri: {
+          type: 'string',
+          description: 'Optional: Claude Desktop conversation URI (for duplicate prevention)',
+        },
         title: {
           type: 'string',
           description: 'Conversation title',
