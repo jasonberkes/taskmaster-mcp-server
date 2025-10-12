@@ -16,6 +16,7 @@ import { conversationTools } from './tools/conversation-tools.js';
 import { filesystemTools } from './tools/filesystem-tools.js';
 import { githubTools } from './tools/github-tools.js';
 import { commandTools } from './tools/command-tools.js';
+import { sessionTools } from './tools/session-tools.js';
 import { sqlTools } from './tools/sql-tools.js';
 
 // Load environment variables
@@ -60,6 +61,7 @@ const tools = [
   ...githubTools,
   ...commandTools,
   ...sqlTools,
+  ...sessionTools,
 ];
 
 // Create server
@@ -413,6 +415,49 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'sql_apply_schema_file':
         return await SqlHandlers.handleSqlApplySchemaFile(args, sqlConfig);
 
+
+      case 'session_start': {
+        console.error('Getting session startup context');
+        
+        try {
+          const result = await db.executeProcedure('sp_GetSessionStartupContext', []);
+          
+          // Format the 7 result sets into a structured response
+          const response = {
+            handoff: result.recordsets[0][0] || null,
+            activeRoadmapItems: result.recordsets[1] || [],
+            activeWorkItems: result.recordsets[2] || [],
+            blockedItems: result.recordsets[3] || [],
+            claudeCodeStatus: result.recordsets[4] || [],
+            recentLearnings: result.recordsets[5] || [],
+            systemHealth: result.recordsets[6][0] || {}
+          };
+          
+          console.error('Session startup context retrieved successfully');
+          console.error('  Handoff: ' + (response.handoff ? 'Found' : 'Not Found'));
+          console.error('  Active RoadmapItems: ' + response.activeRoadmapItems.length);
+          console.error('  Active WorkItems: ' + response.activeWorkItems.length);
+          console.error('  Blocked Items: ' + response.blockedItems.length);
+          console.error('  Claude Code Running: ' + response.claudeCodeStatus.length);
+          console.error('  Recent Learnings: ' + response.recentLearnings.length);
+          
+          return {
+            content: [{
+              type: 'text',
+              text: JSON.stringify(response, null, 2)
+            }]
+          };
+        } catch (error: any) {
+          console.error('Error getting session startup context:', error);
+          return {
+            content: [{
+              type: 'text',
+              text: `Error getting session startup context: ${error.message}`
+            }],
+            isError: true
+          };
+        }
+      }
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
