@@ -92,7 +92,7 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         const { title, messages } = args as {
           title: string;
           messages: Array<{ role: string; content: string; timestamp?: string }>;
-        };
+        const firstMessageContent = messages[0]?.content.substring(0, 100) || "";
         const externalId = `claude-desktop-${Date.now()}`;
         const messagesJson = JSON.stringify(messages);
         console.error(`Saving conversation: ${title}`);
