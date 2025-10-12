@@ -88,18 +88,27 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       // Conversation tools
       case 'save_conversation': {
-        const { conversationUri, title, messages } = args as {
+        const { conversationUri, conversationUrl, conversationUpdatedAt, title, messages } = args as {
           conversationUri?: string;
+          conversationUrl?: string;
+          conversationUpdatedAt?: string;
           title: string;
           messages: Array<{ role: string; content: string; timestamp?: string }>;
         };
         // Use conversation URI if provided, otherwise generate unique ID
         const externalId = conversationUri || `claude-desktop-${Date.now()}`;
+        const externalUrl = conversationUrl || null;
+        const externalUpdatedAt = conversationUpdatedAt || null;
         const messagesJson = JSON.stringify(messages);
         console.error(`Saving conversation: ${title}`);
+        console.error(`  ExternalId: ${externalId}`);
+        console.error(`  ExternalUrl: ${externalUrl}`);
+        console.error(`  ExternalUpdatedAt: ${externalUpdatedAt}`);
         const result = await db.executeProcedure('sp_SaveConversation', [
           { name: 'Source', type: TYPES.NVarChar, value: 'ClaudeDesktop' },
           { name: 'ExternalId', type: TYPES.NVarChar, value: externalId },
+          { name: 'ExternalUrl', type: TYPES.NVarChar, value: externalUrl },
+          { name: 'ExternalUpdatedAt', type: TYPES.DateTime2, value: externalUpdatedAt ? new Date(externalUpdatedAt) : null },
           { name: 'UserId', type: TYPES.NVarChar, value: userId },
           { name: 'Title', type: TYPES.NVarChar, value: title },
           { name: 'MessagesJson', type: TYPES.NVarChar, value: messagesJson },
