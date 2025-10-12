@@ -10,7 +10,6 @@ import * as FileSystem from './filesystem.js';
 import * as GitHub from './github-module.js';
 import * as Commands from './commands-module.js';
 import * as SqlHandlers from './tools/sql-handlers.js';
-import { startAutoImportScheduler } from './auto-import.js';
 
 // Import tool definitions
 import { conversationTools } from './tools/conversation-tools.js';
@@ -427,14 +426,6 @@ async function main() {
   console.error('  - GitHub: 10');
   console.error('  - Command: 1');
   console.error('  - SQL: 6');
-  
-  // Start auto-import scheduler
-  startAutoImportScheduler({
-    db,
-    userId,
-    batchSize: 10,
-    throttleMs: 1000,
-  });
 }
 
 main().catch((error) => {
