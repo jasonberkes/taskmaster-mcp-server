@@ -416,21 +416,40 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
         return await SqlHandlers.handleSqlApplySchemaFile(args, sqlConfig);
 
 
-      case 'session_start': {
+                  case 'session_start': {
         console.error('Getting session startup context');
         
         try {
           const result = await db.executeProcedure('sp_GetSessionStartupContext', []);
           
-          // Format the 7 result sets into a structured response
+          console.error('Result structure:', JSON.stringify({
+            hasRecordsets: !!result.recordsets,
+            recordsetsLength: result.recordsets?.length,
+            keys: Object.keys(result)
+          }));
+          
+          // Handle variable number of result sets (some queries may return 0 rows)
+          // We expect up to 7 result sets, but empty queries won't create a recordset
+          const recordsets = result.recordsets || [];
+          
+          // Parse based on expected order, handling gaps
+          let rsIndex = 0;
           const response = {
-            handoff: result.recordsets[0][0] || null,
-            activeRoadmapItems: result.recordsets[1] || [],
-            activeWorkItems: result.recordsets[2] || [],
-            blockedItems: result.recordsets[3] || [],
-            claudeCodeStatus: result.recordsets[4] || [],
-            recentLearnings: result.recordsets[5] || [],
-            systemHealth: result.recordsets[6][0] || {}
+            handoff: recordsets[rsIndex++]?.[0] || null,
+            activeRoadmapItems: recordsets[rsIndex++] || [],
+            activeWorkItems: recordsets[rsIndex++] || [],
+            blockedItems: recordsets[rsIndex++] || [],
+            claudeCodeStatus: recordsets[rsIndex++] || [],
+            recentLearnings: recordsets[rsIndex++] || [],
+            systemHealth: recordsets[rsIndex++]?.[0] || {
+              highPriorityNew: 0,
+              inProgress: 0,
+              blocked: 0,
+              activeRoadmapItems: 0,
+              unfixedLearnings: 0,
+              publishedDocuments: 0,
+              coreKBEntries: 0
+            }
           };
           
           console.error('Session startup context retrieved successfully');
@@ -458,6 +477,8 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
           };
         }
       }
+
+
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
