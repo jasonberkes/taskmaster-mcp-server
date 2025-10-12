@@ -90,8 +90,7 @@ export class Database {
     const connection = await this.connect();
 
     return new Promise((resolve, reject) => {
-      const recordsets: any[][] = [];
-      let currentRecordset: any[] = [];
+      const results: any[] = [];
       const outputValues: any = {};
 
       const request = new Request(procedureName, (err) => {
@@ -99,12 +98,8 @@ export class Database {
         if (err) {
           reject(err);
         } else {
-          // Add the last recordset if it has rows
-          if (currentRecordset.length > 0) {
-            recordsets.push(currentRecordset);
-          }
           resolve({
-            recordsets,
+            results,
             output: outputValues,
           });
         }
@@ -128,19 +123,11 @@ export class Database {
         columns.forEach((column: any) => {
           row[column.metadata.colName] = column.value;
         });
-        currentRecordset.push(row);
-      });
-
-      // Handle end of recordset (multiple result sets)
-      request.on('doneInProc', (rowCount: any, more: any) => {
-        if (currentRecordset.length > 0) {
-          recordsets.push(currentRecordset);
-          currentRecordset = [];
-        }
+        results.push(row);
       });
 
       // Handle return status and output parameters
-      request.on('returnValue', (parameterName: any, value: any) => {
+      request.on('returnValue', (parameterName, value) => {
         outputValues[parameterName] = value;
       });
 
