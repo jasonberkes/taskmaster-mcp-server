@@ -10,13 +10,13 @@ import * as FileSystem from './filesystem.js';
 import * as GitHub from './github-module.js';
 import * as Commands from './commands-module.js';
 import * as SqlHandlers from './tools/sql-handlers.js';
+import { startAutoImportScheduler } from './auto-import.js';
 
 // Import tool definitions
 import { conversationTools } from './tools/conversation-tools.js';
 import { filesystemTools } from './tools/filesystem-tools.js';
 import { githubTools } from './tools/github-tools.js';
 import { commandTools } from './tools/command-tools.js';
-import { sessionTools } from './tools/session-tools.js';
 import { sqlTools } from './tools/sql-tools.js';
 
 // Load environment variables
@@ -61,7 +61,6 @@ const tools = [
   ...githubTools,
   ...commandTools,
   ...sqlTools,
-  ...sessionTools,
 ];
 
 // Create server
@@ -90,27 +89,16 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
     switch (name) {
       // Conversation tools
       case 'save_conversation': {
-        const { conversationUri, conversationUrl, conversationUpdatedAt, title, messages } = args as {
-          conversationUri?: string;
-          conversationUrl?: string;
-          conversationUpdatedAt?: string;
+        const { title, messages } = args as {
           title: string;
           messages: Array<{ role: string; content: string; timestamp?: string }>;
-        };
-        // Use conversation URI if provided, otherwise generate unique ID
-        const externalId = conversationUri || `claude-desktop-${Date.now()}`;
-        const externalUrl = conversationUrl || null;
-        const externalUpdatedAt = conversationUpdatedAt || null;
+        const firstMessageContent = messages[0]?.content.substring(0, 100) || "";
+        const externalId = `claude-desktop-${Date.now()}`;
         const messagesJson = JSON.stringify(messages);
         console.error(`Saving conversation: ${title}`);
-        console.error(`  ExternalId: ${externalId}`);
-        console.error(`  ExternalUrl: ${externalUrl}`);
-        console.error(`  ExternalUpdatedAt: ${externalUpdatedAt}`);
         const result = await db.executeProcedure('sp_SaveConversation', [
           { name: 'Source', type: TYPES.NVarChar, value: 'ClaudeDesktop' },
           { name: 'ExternalId', type: TYPES.NVarChar, value: externalId },
-          { name: 'ExternalUrl', type: TYPES.NVarChar, value: externalUrl },
-          { name: 'ExternalUpdatedAt', type: TYPES.DateTime2, value: externalUpdatedAt ? new Date(externalUpdatedAt) : null },
           { name: 'UserId', type: TYPES.NVarChar, value: userId },
           { name: 'Title', type: TYPES.NVarChar, value: title },
           { name: 'MessagesJson', type: TYPES.NVarChar, value: messagesJson },
@@ -415,70 +403,6 @@ server.setRequestHandler(CallToolRequestSchema, async (request) => {
       case 'sql_apply_schema_file':
         return await SqlHandlers.handleSqlApplySchemaFile(args, sqlConfig);
 
-
-                  case 'session_start': {
-        console.error('Getting session startup context');
-        
-        try {
-          const result = await db.executeProcedure('sp_GetSessionStartupContext', []);
-          
-          console.error('Result structure:', JSON.stringify({
-            hasRecordsets: !!result.recordsets,
-            recordsetsLength: result.recordsets?.length,
-            keys: Object.keys(result)
-          }));
-          
-          // Handle variable number of result sets (some queries may return 0 rows)
-          // We expect up to 7 result sets, but empty queries won't create a recordset
-          const recordsets = result.recordsets || [];
-          
-          // Parse based on expected order, handling gaps
-          let rsIndex = 0;
-          const response = {
-            handoff: recordsets[rsIndex++]?.[0] || null,
-            activeRoadmapItems: recordsets[rsIndex++] || [],
-            activeWorkItems: recordsets[rsIndex++] || [],
-            blockedItems: recordsets[rsIndex++] || [],
-            claudeCodeStatus: recordsets[rsIndex++] || [],
-            recentLearnings: recordsets[rsIndex++] || [],
-            systemHealth: recordsets[rsIndex++]?.[0] || {
-              highPriorityNew: 0,
-              inProgress: 0,
-              blocked: 0,
-              activeRoadmapItems: 0,
-              unfixedLearnings: 0,
-              publishedDocuments: 0,
-              coreKBEntries: 0
-            }
-          };
-          
-          console.error('Session startup context retrieved successfully');
-          console.error('  Handoff: ' + (response.handoff ? 'Found' : 'Not Found'));
-          console.error('  Active RoadmapItems: ' + response.activeRoadmapItems.length);
-          console.error('  Active WorkItems: ' + response.activeWorkItems.length);
-          console.error('  Blocked Items: ' + response.blockedItems.length);
-          console.error('  Claude Code Running: ' + response.claudeCodeStatus.length);
-          console.error('  Recent Learnings: ' + response.recentLearnings.length);
-          
-          return {
-            content: [{
-              type: 'text',
-              text: JSON.stringify(response, null, 2)
-            }]
-          };
-        } catch (error: any) {
-          console.error('Error getting session startup context:', error);
-          return {
-            content: [{
-              type: 'text',
-              text: `Error getting session startup context: ${error.message}`
-            }],
-            isError: true
-          };
-        }
-      }
-
-
       default:
         throw new Error(`Unknown tool: ${name}`);
     }
@@ -503,6 +427,14 @@ async function main() {
   console.error('  - GitHub: 10');
   console.error('  - Command: 1');
   console.error('  - SQL: 6');
+  
+  // Start auto-import scheduler
+  startAutoImportScheduler({
+    db,
+    userId,
+    batchSize: 10,
+    throttleMs: 1000,
+  });
 }
 
 main().catch((error) => {
