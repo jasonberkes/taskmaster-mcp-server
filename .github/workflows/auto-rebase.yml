@@ -8,6 +8,10 @@ on:
     branches: [main]
   workflow_dispatch:
 
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   rebase:
     uses: jasonberkes/taskmaster-shared-workflows/.github/workflows/reusable-auto-rebase.yml@main
