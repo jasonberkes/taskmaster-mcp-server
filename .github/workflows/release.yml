@@ -1,0 +1,20 @@
+# =============================================================================
+# Release - Calls Shared Workflow
+# =============================================================================
+name: Release
+
+on:
+  push:
+    tags: ['v*']
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version (e.g., 1.0.0)'
+        required: false
+
+jobs:
+  release:
+    uses: jasonberkes/taskmaster-shared-workflows/.github/workflows/reusable-release.yml@main
+    with:
+      version: ${{ github.event.inputs.version || '' }}
+    secrets: inherit

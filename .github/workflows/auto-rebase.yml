@@ -1,0 +1,14 @@
+# =============================================================================
+# Auto-Rebase PRs - Calls Shared Workflow
+# =============================================================================
+name: Auto-Rebase PRs
+
+on:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  rebase:
+    uses: jasonberkes/taskmaster-shared-workflows/.github/workflows/reusable-auto-rebase.yml@main
+    secrets: inherit
