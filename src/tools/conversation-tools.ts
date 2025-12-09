@@ -7,6 +7,18 @@ export const conversationTools: Tool[] = [
     inputSchema: {
       type: 'object',
       properties: {
+        conversationUri: {
+          type: 'string',
+          description: 'Optional: Claude Desktop conversation URI/UUID (for duplicate prevention)',
+        },
+        conversationUrl: {
+          type: 'string',
+          description: 'Optional: Full Claude Desktop conversation URL',
+        },
+        conversationUpdatedAt: {
+          type: 'string',
+          description: 'Optional: When conversation was last updated in Claude Desktop (ISO timestamp)',
+        },
         title: {
           type: 'string',
           description: 'Conversation title',
