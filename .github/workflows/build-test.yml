@@ -1,0 +1,63 @@
+# ============================================================================
+# Build Workflow for taskmaster-mcp-server
+# ============================================================================
+# WI #3522: Add CI pipeline
+# ============================================================================
+
+name: Build
+
+on:
+  push:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  pull_request:
+    branches:
+      - main
+    paths-ignore:
+      - '**/*.md'
+      - 'docs/**'
+  workflow_dispatch:
+
+jobs:
+  build:
+    name: Build TypeScript
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Build TypeScript
+        run: npm run build
+
+      - name: Verify build output
+        run: |
+          echo "Checking build output..."
+          ls -la build/ 2>/dev/null || echo "Build directory not found"
+          
+          if [ -f "build/index.js" ]; then
+            echo "✅ Build successful - index.js created"
+          else
+            echo "❌ Build may have failed - index.js not found"
+            exit 1
+          fi
+
+      - name: Build Summary
+        if: success()
+        run: |
+          echo "✅ TypeScript build completed successfully"
+          echo ""
+          echo "Build output:"
+          find build -name "*.js" | head -20
